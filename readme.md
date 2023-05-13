@@ -18,3 +18,15 @@ IGNORE 1 ROWS;
 source /home/juan/SINF/procedimientos/crear_tablas.sql
 source /home/juan/SINF/procedimientos/procedimientos_total.sql
 
+
+Orden poblar:
+Espectaculo
+Recinto
+Grada 
+Localidad
+Evento
+Usuario(ya esta) con el procedimiento
+UsLoc
+Cliente
+Oferta
+Compra
