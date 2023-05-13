@@ -6,7 +6,7 @@ import random
 cnx = mysql.connector.connect(
     host='localhost',
     user='juan',
-    password='R.e.m.n.5',
+    password='1234',
     database='Taquilla'
 )
 
