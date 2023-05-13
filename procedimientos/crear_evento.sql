@@ -83,4 +83,4 @@ END //
 
 DELIMITER ;
 
-CALL CrearEvento('El Clásico', 'Camp Nou', '2023-12-12 20:00:00', 'Abierto');
+CALL CrearEvento('El Clasico', 'Camp Nou', '2023-12-12 20:00:00', 'Abierto');

@@ -307,3 +307,4 @@ SELECT * FROM Grada;
 SELECT * FROM Recinto;
 SELECT * FROM Espectaculo;
 SELECT * FROM Evento;
+SELECT * FROM Oferta;
