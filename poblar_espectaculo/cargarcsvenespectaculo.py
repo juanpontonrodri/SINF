@@ -16,7 +16,7 @@ conexion = mysql.connector.connect(**config)
 cursor = conexion.cursor()
 
 # Nombre del archivo CSV a importar
-archivo_csv = 'nuevas_pelis.csv'
+archivo_csv = 'pelis_limpio.csv'
 
 try:
     # Leer el archivo CSV

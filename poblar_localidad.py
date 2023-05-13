@@ -36,20 +36,27 @@ for recinto in recintos:
     for grada in gradas:
         num_localidades = grada['num_localidades_reservar_grada']
         contador = 1
+        print("Generando {} localidades para la grada {} del recinto {}".format(num_localidades, grada['nombre_grada'], nombre_recinto))
         
         for _ in range(num_localidades):
             nombre_localidad = generar_nombre_localidad(grada, nombre_recinto, contador)
             
             precio_base_localidad = random.randint(5, 50)
-            estado_localidad = 'libre'
+            estado_localidad = 'disponible'
             
             cursor_localidades = connection.cursor()
-            query_localidades = "CALL crear_localidad(%s, %s, %s, %s, %s)"
-            values_localidades = (nombre_localidad, nombre_recinto, grada['nombre_grada'], precio_base_localidad, estado_localidad)
-            cursor_localidades.execute(query_localidades, values_localidades)
-            connection.commit()
-            cursor_localidades.close()
             
+            try:
+                # Imprimir la línea para llamar al procedimiento almacenado
+                #print(f"CALL crear_localidad('{nombre_localidad}', '{nombre_recinto}', '{grada['nombre_grada']}', '{precio_base_localidad}', '{estado_localidad}');")
+
+                # Llamar y ejecutar el procedimiento almacenado
+                cursor_localidades.callproc("crear_localidad", (nombre_localidad, nombre_recinto, grada['nombre_grada'], precio_base_localidad, estado_localidad))
+                connection.commit()
+            
+            except mysql.connector.IntegrityError:
+                # Capturar la excepción cuando la tupla ya existe en UsLoc
+                pass
             contador += 1
     
     cursor_gradas.close()

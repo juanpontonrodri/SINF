@@ -25,7 +25,6 @@ END//
 
 DELIMITER ;
 
-CALL crear_espectaculo('El Clasico', 'El partido del año', 'Barca, Real Madrid');
 
 
 CREATE DATABASE IF NOT EXISTS Taquilla;
@@ -54,7 +53,6 @@ END//
 
 DELIMITER ;
 
-CALL crear_recinto('Camp Nou', 89000);
 
 
 USE Taquilla;
@@ -63,26 +61,47 @@ DELIMITER //
 
 DROP PROCEDURE IF EXISTS crear_gradas//
 
-CREATE PROCEDURE crear_gradas(IN nombre_grada_in VARCHAR(50), IN nombre_recinto_grada_in VARCHAR(50), num_localidades_reservar_grada_in int, precio_grada_in int)
+CREATE PROCEDURE crear_gradas(
+    IN nombre_grada_in VARCHAR(50), 
+    IN nombre_recinto_grada_in VARCHAR(50), 
+    IN num_localidades_reservar_grada_in INT, 
+    IN precio_grada_in INT
+)
 BEGIN
 
-CREATE TABLE IF NOT EXISTS Grada 
-(
-    nombre_grada VARCHAR(50),
-    nombre_recinto_grada VARCHAR(50),
-    num_localidades_reservar_grada INT,
-    precio_grada INT,
-    FOREIGN KEY(nombre_recinto_grada) REFERENCES Recinto(nombre_recinto),
-    PRIMARY KEY(nombre_grada, nombre_recinto_grada)
-);
+DECLARE localidades_recinto_proc INT;
+DECLARE total_localidades_reservadas INT;
 
-INSERT INTO Grada(nombre_grada, nombre_recinto_grada, num_localidades_reservar_grada, precio_grada) VALUES (nombre_grada_in, nombre_recinto_grada_in, num_localidades_reservar_grada_in, precio_grada_in);
+-- Obtener el número de localidades del recinto correspondiente
+SELECT localidades_recinto INTO localidades_recinto_proc 
+FROM Recinto WHERE nombre_recinto = nombre_recinto_grada_in;
+
+-- Obtener el sumatorio de localidades reservadas para el recinto correspondiente
+SELECT IFNULL(SUM(num_localidades_reservar_grada), 0) INTO total_localidades_reservadas
+FROM Grada WHERE nombre_recinto_grada = nombre_recinto_grada_in;
+
+IF total_localidades_reservadas + num_localidades_reservar_grada_in > localidades_recinto_proc THEN
+    SIGNAL SQLSTATE '45001' 
+        SET MESSAGE_TEXT = 'No hay tanto aforo';
+ELSE
+    -- Crear la tabla si no existe y hacer la inserción
+    CREATE TABLE IF NOT EXISTS Grada (
+        nombre_grada VARCHAR(50),
+        nombre_recinto_grada VARCHAR(50),
+        num_localidades_reservar_grada INT,
+        precio_grada INT,
+        FOREIGN KEY(nombre_recinto_grada) REFERENCES Recinto(nombre_recinto),
+        PRIMARY KEY(nombre_grada, nombre_recinto_grada)
+    );
+    
+    INSERT INTO Grada(nombre_grada, nombre_recinto_grada, num_localidades_reservar_grada, precio_grada) 
+    VALUES (nombre_grada_in, nombre_recinto_grada_in, num_localidades_reservar_grada_in, precio_grada_in);
+END IF;
 
 END//
 
 DELIMITER ;
 
-CALL crear_gradas('Grada Norte', 'Camp Nou', 10000, 50);
 
 
 CREATE DATABASE IF NOT EXISTS Taquilla;
@@ -96,35 +115,51 @@ CREATE TABLE IF NOT EXISTS Localidad (
         estado_localidad ENUM('disponible', 'no disponible')
     );
 DELIMITER //
-
-DROP PROCEDURE IF EXISTS crear_localidad//
+DROP PROCEDURE IF EXISTS crear_localidad;
 
 CREATE PROCEDURE crear_localidad(
-    IN localizacion_localidad_in VARCHAR(50),
-    IN nombre_recinto_localidad_in VARCHAR(50),
-    IN nombre_grada_localidad_in VARCHAR(50),
-    IN precio_base_localidad_in INT,
-    IN estado_localidad_in ENUM('disponible', 'no disponible')
+    IN p_localizacion VARCHAR(50), 
+    IN p_nombre_recinto VARCHAR(50), 
+    IN p_nombre_grada VARCHAR(50),
+    IN p_precio_base INT, 
+    IN p_estado ENUM('disponible', 'no disponible')
 )
 BEGIN
-    INSERT INTO Localidad (
-        localizacion_localidad,
-        nombre_recinto_localidad,
-        nombre_grada_localidad,
-        precio_base_localidad,
-        estado_localidad
-    ) VALUES (
-        localizacion_localidad_in,
-        nombre_recinto_localidad_in,
-        nombre_grada_localidad_in,
-        precio_base_localidad_in,
-        estado_localidad_in
-    );
+    DECLARE recinto_existe INT DEFAULT 0;
+    DECLARE grada_existe INT DEFAULT 0;
+    DECLARE num_tuplas INT DEFAULT 0;
+    DECLARE num_localidades_reservar INT DEFAULT 0;
+    
+    -- Comprobar si el recinto existe
+    SELECT COUNT(*) INTO recinto_existe FROM Recinto WHERE nombre_recinto = p_nombre_recinto;
+    
+    -- Comprobar si la grada existe y obtener el número de localidades a reservar
+    SELECT num_localidades_reservar_grada, COUNT(*) INTO num_localidades_reservar, grada_existe 
+    FROM Grada WHERE nombre_grada = p_nombre_grada AND nombre_recinto_grada = p_nombre_recinto
+    GROUP BY num_localidades_reservar_grada;
+    
+    IF recinto_existe > 0 AND grada_existe > 0 THEN
+        -- Obtener el número de tuplas con el mismo recinto y la misma grada
+        SELECT COUNT(*) INTO num_tuplas FROM Localidad WHERE nombre_recinto_localidad = p_nombre_recinto AND nombre_grada_localidad = p_nombre_grada;
+        
+        -- Comprobar si se pueden reservar más localidades en la grada
+        IF num_tuplas < num_localidades_reservar THEN
+            -- Insertar nueva localidad si tanto el recinto como la grada existen y se pueden reservar más localidades
+            INSERT INTO Localidad(localizacion_localidad, nombre_recinto_localidad, nombre_grada_localidad, precio_base_localidad, estado_localidad)
+            VALUES (p_localizacion, p_nombre_recinto, p_nombre_grada, p_precio_base, p_estado);
+        
+            -- Imprimir el número de tuplas con el mismo recinto y la misma grada
+            SELECT CONCAT("La localidad ha sido creada exitosamente. Hay ", num_tuplas+1, " localidades en la misma grada y el mismo recinto.") AS mensaje;
+        ELSE
+            SELECT "Error: No se pueden reservar más localidades en esta grada." AS mensaje;
+        END IF;
+    ELSE
+        SELECT "Error: El recinto o la grada no existen." AS mensaje;
+    END IF;
 END//
 
 DELIMITER ;
 
-CALL crear_localidad('Asiento 1', 'Camp Nou', 'Grada Norte', 50, 'disponible');
 
 CREATE DATABASE IF NOT EXISTS Taquilla;
 USE Taquilla;
@@ -211,13 +246,44 @@ END //
 
 DELIMITER ;
 
-CALL CrearEvento('El Clasico', 'Camp Nou', '2023-12-12 20:00:00', 'Abierto');
 
 
-INSERT INTO Usuario VALUES ('adulto', 15);
+USE Taquilla;
 
-INSERT INTO UsLoc VALUES ('adulto', 'Asiento 1', 'Grada Norte', 'Camp Nou');
+DELIMITER //
 
+DROP PROCEDURE IF EXISTS crear_usLoc;
+
+CREATE PROCEDURE crear_usLoc(
+    IN localizacion_localidad_in VARCHAR(50),
+    IN nombre_grada_in VARCHAR(50),
+    IN nombre_recinto_in VARCHAR(50),
+    IN tipo_usuario ENUM('jubilado', 'parado', 'adulto', 'infantil')
+)
+BEGIN
+    DECLARE consulta VARCHAR(50);
+
+    SELECT localizacion_localidad INTO consulta
+    FROM Localidad
+    WHERE nombre_recinto_localidad = nombre_recinto_in
+        AND localizacion_localidad = localizacion_localidad_in
+        AND nombre_grada_localidad = nombre_grada_in;
+
+    IF consulta = localizacion_localidad_in THEN
+        INSERT INTO UsLoc VALUES (tipo_usuario, localizacion_localidad_in, nombre_grada_in, nombre_recinto_in);
+    END IF;
+END//
+
+DELIMITER ;
+
+
+
+INSERT INTO Usuario VALUES ('adulto', 0);
+INSERT INTO Usuario VALUES ('parado', 10);
+INSERT INTO Usuario VALUES ('jubilado', 20);
+INSERT INTO Usuario VALUES ('infantil', 30);
+
+CALL crear_usLoc('Asiento 1', 'Grada Norte', 'Camp Nou', 'adulto');
 
 
 
@@ -296,8 +362,14 @@ BEGIN
 END //
 DELIMITER ;
 
-CALL crearOferta('El Clasico', 'Camp Nou', 2023-12-12 20:00:00, 'adulto', 'Asiento 1', 'Grada Norte');
 
+CALL crear_espectaculo('El Clasico', 'El partido del año', 'Barca, Real Madrid');
+CALL crear_recinto('Camp Nou', 89000);
+CALL crear_gradas('Grada Norte', 'Camp Nou', 10000, 50);
+CALL crear_localidad('Asiento 1', 'Camp Nou', 'Grada Norte', 50, 'disponible');
+CALL CrearEvento('El Clasico', 'Camp Nou', '2023-12-12 20:00:00', 'Abierto');
+CALL crear_usLoc('Asiento 1', 'Grada Norte', 'Camp Nou', 'adulto');
+CALL crearOferta('El Clasico', 'Camp Nou', '2023-12-12 20:00:00', 'adulto', 'Asiento 1', 'Grada Norte');
 
 
 SELECT * FROM UsLoc;
@@ -308,3 +380,5 @@ SELECT * FROM Recinto;
 SELECT * FROM Espectaculo;
 SELECT * FROM Evento;
 SELECT * FROM Oferta;
+SELECT * FROM Compra;
+

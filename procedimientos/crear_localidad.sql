@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS Localidad (
     );
 DELIMITER //
 
-DROP PROCEDURE IF EXISTS crear_localidad//
+DROP PROCEDURE IF EXISTS crear_localidad;
 
 CREATE PROCEDURE crear_localidad(
     IN localizacion_localidad_in VARCHAR(50),
