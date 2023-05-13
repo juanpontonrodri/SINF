@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS Localidad (
         nombre_recinto_localidad VARCHAR(50),
         nombre_grada_localidad VARCHAR(50),
         precio_base_localidad INT,
-        estado_localidad ENUM('pre-reservado', 'reservado', 'deteriorado', 'libre')
+        estado_localidad ENUM('disponible', 'no disponible')
     );
 DELIMITER //
 
@@ -17,7 +17,7 @@ CREATE PROCEDURE crear_localidad(
     IN nombre_recinto_localidad_in VARCHAR(50),
     IN nombre_grada_localidad_in VARCHAR(50),
     IN precio_base_localidad_in INT,
-    IN estado_localidad_in ENUM('pre-reservado', 'reservado', 'deteriorado', 'libre')
+    IN estado_localidad_in ENUM('disponible', 'no disponible')
 )
 BEGIN
     INSERT INTO Localidad (
