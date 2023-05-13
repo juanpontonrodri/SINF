@@ -73,5 +73,5 @@ BEGIN
 END //
 DELIMITER ;
 
-CALL crearOferta('El Clásico', 'Camp Nou', '2023-12-18 20:00:00', 'adulto', 'Asiento 1', 'Grada Norte');
+CALL crearOferta('El Clasico', 'Camp Nou', 2023-12-12 20:00:00, 'adulto', 'Asiento 1', 'Grada Norte');
 
