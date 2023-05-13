@@ -1,5 +1,6 @@
 Usando faker para generar datos:
-pip install Faker mysql-connector-python
+pip install Faker mysql-connector-python IMDbPY
+
 
 
 python3 -m venv /home/juan/pyenv
